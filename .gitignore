@@ -19,3 +19,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+./Handling_Class_Imbalance.docx
+./Notebook/Sampling_Technique_Selection.ipynb
+./Notebook/cleaned_data.csv
