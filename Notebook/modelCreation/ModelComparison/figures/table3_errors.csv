@@ -1,0 +1,5 @@
+,Churners caught (TP),Churners missed (FN),False alarms (FP),Correct non-churners (TN),Flagged who really churn
+Logistic Regression,322,52,231,804,58%
+Decision Tree,315,59,264,771,54%
+Random Forest,234,140,79,956,75%
+XGBoost,285,89,132,903,68%
