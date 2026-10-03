@@ -1,0 +1,25 @@
+# Personal docs
+Docs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+./Handling_Class_Imbalance.docx
+./Notebook/Sampling_Technique_Selection.ipynb
+./Notebook/cleaned_data.csv

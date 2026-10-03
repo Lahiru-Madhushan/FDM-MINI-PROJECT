@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Churn Risk Checker</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ccircle cx=%278%27 cy=%278%27 r=%277%27 fill=%27%232a78d6%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <div>
+        <h1>Churn Risk Checker</h1>
+        <p class="subtitle">Find customers who are likely to leave, see why, and decide how to keep them.</p>
+      </div>
+      <div id="service-status" class="status status-checking" role="status">Connecting…</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="service-error" class="banner banner-error" hidden>
+      The prediction service is not reachable. From the project folder run
+      <code>.venv\Scripts\python -m uvicorn backend.app.main:app</code>, then open
+      <a href="http://127.0.0.1:8000">http://127.0.0.1:8000</a>.
+    </div>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" role="tab" aria-selected="true" data-tab="single">Single customer</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="batch">Many customers (CSV)</button>
+    </nav>
+
+    <!-- ============================================================ single customer -->
+    <section id="tab-single" class="tab-panel">
+      <div class="layout">
+        <form id="customer-form" novalidate>
+          <div class="intro card">
+            <h2>Check one customer</h2>
+            <p>Fill in what you know about the customer and press <strong>Predict churn risk</strong>.
+              Fields marked <span class="req">*</span> are required; optional numbers are estimated from typical
+              customers if left blank. Not sure? Load an example.</p>
+            <div class="example-buttons">
+              <span>Examples:</span>
+              <button type="button" class="btn btn-small" data-example="high">High risk</button>
+              <button type="button" class="btn btn-small" data-example="moderate">Moderate risk</button>
+              <button type="button" class="btn btn-small" data-example="low">Low risk</button>
+            </div>
+          </div>
+          <div id="form-groups"></div>
+          <div id="form-error" class="banner banner-error" hidden></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="predict-btn">Predict churn risk</button>
+            <button type="button" class="btn" id="clear-btn">Clear form</button>
+          </div>
+        </form>
+
+        <aside id="result" class="card result" aria-live="polite">
+          <div class="result-empty">
+            <h2>Prediction</h2>
+            <p>The churn risk, the main reasons behind it and suggested retention actions will appear here.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============================================================ batch -->
+    <section id="tab-batch" class="tab-panel" hidden>
+      <div class="card">
+        <h2>Score many customers from a CSV file</h2>
+        <p>Upload a CSV with one customer per row to get a list ranked by churn risk – ready for a retention
+          campaign. Columns can use the original dataset names (e.g. <code>Monthly Charge</code>) or the API names
+          (e.g. <code>monthly_charge</code>). A <code>Customer ID</code> column is kept to identify customers.
+          Up to 5,000 rows.</p>
+        <div class="upload-row">
+          <input type="file" id="csv-file" accept=".csv,text/csv">
+          <button class="btn btn-primary" id="csv-btn" disabled>Score file</button>
+          <a class="btn" href="sample_customers.csv" download>Download sample CSV</a>
+        </div>
+        <div id="batch-error" class="banner banner-error" hidden></div>
+      </div>
+      <div id="batch-result" hidden>
+        <div class="summary">
+          <div class="stat"><span id="sum-count">0</span><small>customers scored</small></div>
+          <div class="stat stat-risk"><span id="sum-risk">0</span><small>likely to churn</small></div>
+          <div class="stat"><span id="sum-rate">0%</span><small>of scored customers at risk</small></div>
+          <div class="stat"><span id="sum-errors">0</span><small>rows with errors</small></div>
+        </div>
+        <div class="card">
+          <div class="table-tools">
+            <label><input type="checkbox" id="only-risk"> Show only customers likely to churn</label>
+            <button class="btn btn-small" id="download-btn">Download results (CSV)</button>
+          </div>
+          <div class="table-wrap">
+            <table id="batch-table">
+              <thead><tr><th>#</th><th>Customer</th><th>Churn risk</th><th>Risk level</th>
+                <th>Top risk factor</th><th>Suggested action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="row-errors" class="card" hidden>
+          <h3>Rows that could not be scored</h3>
+          <ul id="row-error-list"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap footer" id="model-info"></footer>
+  <script src="app.js"></script>
+</body>
+</html>
