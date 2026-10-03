@@ -6,7 +6,38 @@ An end-to-end machine learning system for predicting whether a telecommunication
 
 ---
 
+## ⚡ Quick Start
+
+| | |
+| --- | --- |
+| **What it does** | Predicts a customer's churn probability, explains the main reasons and suggests retention actions |
+| **Final model** | Tuned **XGBoost** (decision threshold 0.51), chosen after comparing 4 algorithms |
+| **Test performance** | F1 **0.721** · ROC-AUC **0.914** · Recall 0.762 · Precision 0.684 (1,409 held-out customers) |
+| **Backend** | FastAPI service in `backend/` – loads `models/preprocessing_pipeline.pkl` and `models/xgboost_final.pkl` |
+| **Frontend** | HTML / CSS / JavaScript in `frontend/` – served by the backend, so one command runs everything |
+| **Requirements** | Python **3.11** and Git |
+
+```powershell
+# 1. Set up (once)
+git clone https://github.com/Lahiru-Madhushan/FDM-MINI-PROJECT.git
+cd FDM-MINI-PROJECT
+py -3.11 -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+
+# 2. Start the backend (it also serves the frontend)
+.venv\Scripts\python -m uvicorn backend.app.main:app --reload
+```
+
+**3. Open the app:** <http://127.0.0.1:8000> – the frontend · <http://127.0.0.1:8000/docs> – interactive API documentation
+
+> macOS / Linux: use `python3.11 -m venv .venv`, then `.venv/bin/python` instead of `.venv\Scripts\python`.
+> Full details: [Getting Started](#-getting-started) · [Running the Backend](#-running-the-backend) · [Using the Frontend](#-using-the-frontend)
+
+---
+
 ## 📖 Table of Contents
+
+* [Quick Start](#-quick-start)
 
 * [Overview](#-overview)
 * [Problem Scenario](#-problem-scenario)
@@ -26,6 +57,12 @@ An end-to-end machine learning system for predicting whether a telecommunication
 * [Technology Stack](#-technology-stack)
 * [Project Structure](#-project-structure)
 * [Getting Started](#-getting-started)
+* [Running the Backend](#-running-the-backend)
+* [Using the Frontend](#-using-the-frontend)
+* [API Endpoints](#-api-endpoints)
+* [Running the Tests](#-running-the-tests)
+* [Deployment](#-deployment)
+* [Troubleshooting](#-troubleshooting)
 * [Team Contributions](#-team-contributions)
 * [Evaluation 1](#-evaluation-1)
 * [Future Development](#-future-development)
@@ -601,38 +638,49 @@ The final backend must load the trained model and required preprocessing pipelin
 ```text
 FDM-MINI-PROJECT/
 │
-├── data/
-│   ├── telco.csv
-│   └── cleaned_data.csv
+├── Dataset/
+│   └── telco.csv                         # raw IBM Telco dataset (7,043 × 50)
 │
-├── notebooks/
-│   ├── 01_EDA.ipynb
-│   ├── 02_Data_Cleaning_Member1.ipynb
-│   ├── 03_Feature_Selection_Member2.ipynb
-│   ├── 04_Preprocessing_Member3.ipynb
-│   └── 05_Model_Development.ipynb
+├── Notebook/
+│   ├── Preprocessing/
+│   │   ├── EDA.ipynb                     # data understanding, statistics, leakage discovery
+│   │   ├── Data_Cleaning.ipynb           # → cleaned_data.csv
+│   │   ├── Feature_Selection.ipynb       # → feature_selected_data.csv (29 features)
+│   │   ├── Data_Preprocessing.ipynb      # → train/test_processed.csv + preprocessing pipeline
+│   │   └── Preprocessing_Full_Flow.ipynb # whole preprocessing flow in one notebook → SplitData/
+│   └── modelCreation/
+│       ├── LogisticRegression/           # Logistic Regression
+│       ├── DecissionTree/                # Decision Tree
+│       ├── RandomForest/                 # Random Forest
+│       ├── XGBoost/                      # XGBoost (final model)
+│       └── ModelComparison/              # evaluation of all 4 models + figures/ for the report
 │
-├── src/
-│   ├── cleaning.py
-│   ├── feature_engineering.py
-│   ├── preprocessing.py
-│   ├── model_training.py
-│   └── model_optimization.py
+├── SplitData/                            # X/y train and test splits
+├── train_processed.csv, test_processed.csv
 │
 ├── models/
-│   ├── preprocessing_pipeline.pkl
-│   └── final_model.pkl
+│   ├── preprocessing_pipeline.pkl        # fitted ColumnTransformer (imputers, scaler, one-hot)
+│   ├── xgboost_final.pkl                 # final model used by the backend
+│   ├── xgboost_final_metadata.json       # decision threshold, feature order, test metrics
+│   ├── decision_tree_final.pkl
+│   └── random_forest_final.pkl
 │
 ├── backend/
-│   └── ...
+│   ├── app/
+│   │   ├── main.py                       # FastAPI app and API endpoints
+│   │   ├── predictor.py                  # loads the model; preprocessing, predictions, explanations
+│   │   ├── schemas.py                    # input fields, validation rules, response format
+│   │   └── config.py                     # paths and limits
+│   ├── tests/test_api.py                 # API tests
+│   └── requirements.txt                  # app dependencies
 │
 ├── frontend/
-│   └── ...
+│   ├── index.html, styles.css, app.js    # Churn Risk Checker web interface
+│   ├── examples.json                     # example customers (high / moderate / low risk)
+│   └── sample_customers.csv              # sample file for CSV scoring
 │
-├── docs/
-│   ├── Evaluation_1_Preprocessing_Document.docx
-│   └── technical_report.docx
-│
+├── requirements.txt                      # all dependencies (app + notebooks)
+├── render.yaml                           # deployment configuration for Render
 └── README.md
 ```
 
@@ -642,68 +690,222 @@ FDM-MINI-PROJECT/
 
 ## Prerequisites
 
-Install:
-
-* Python 3.10+
-* Jupyter Notebook or VS Code
-* Git
+* **Python 3.11** – the models were trained with Python 3.11 and scikit-learn 1.9.1; using the same versions guarantees the saved models load correctly
+* **Git**
+* VS Code or Jupyter (only needed to open the notebooks)
 
 ## 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Lahiru-Madhushan/FDM-MINI-PROJECT.git
 cd FDM-MINI-PROJECT
 ```
 
 ## 2. Create a Virtual Environment
 
-```bash
-python -m venv venv
+### Windows (PowerShell)
+
+```powershell
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
 ```
 
-### Windows
+If PowerShell blocks the activation script, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or skip activation and call `.venv\Scripts\python` directly as in the commands below.
+
+### macOS / Linux
 
 ```bash
-venv\Scripts\activate
-```
-
-### Linux / macOS
-
-```bash
-source venv/bin/activate
+python3.11 -m venv .venv
+source .venv/bin/activate
 ```
 
 ## 3. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+# everything: the app and the notebooks
+python -m pip install -r requirements.txt
+
+# or the app only (backend + frontend)
+python -m pip install -r backend/requirements.txt
 ```
 
-## 4. Run the EDA Notebook
+## 4. Check the Installation
+
+```bash
+python -m pytest backend/tests -q
+```
+
+All tests should pass (see [Running the Tests](#-running-the-tests)).
+
+## 5. Run the Notebooks (optional)
+
+The trained models are already saved in `models/`, so the notebooks are only needed to reproduce or inspect the work. Open them in VS Code or Jupyter, select the `.venv` kernel, and run them in this order:
+
+| Step | Notebook | Output |
+| --- | --- | --- |
+| 1 | `Notebook/Preprocessing/EDA.ipynb` | Data understanding and charts |
+| 2 | `Notebook/Preprocessing/Data_Cleaning.ipynb` | `cleaned_data.csv` |
+| 3 | `Notebook/Preprocessing/Feature_Selection.ipynb` | `feature_selected_data.csv` |
+| 4 | `Notebook/Preprocessing/Data_Preprocessing.ipynb` | `train_processed.csv`, `test_processed.csv`, `models/preprocessing_pipeline.pkl` |
+| 5 | `Notebook/modelCreation/<Model>/…ipynb` | One notebook per algorithm; final models saved in `models/` |
+| 6 | `Notebook/modelCreation/ModelComparison/Model_Evaluation_Comparison.ipynb` | Comparison of all four models; charts and tables in `figures/` |
+
+`Notebook/Preprocessing/Preprocessing_Full_Flow.ipynb` runs steps 2–4 in a single notebook.
+
+---
+
+# 🔌 Running the Backend
+
+The backend is a **FastAPI** service. When it starts it loads the saved preprocessing pipeline, the final XGBoost model and its decision threshold from `models/`. It also serves the frontend, so this one command starts the whole system.
+
+From the project root:
+
+```powershell
+# Windows
+.venv\Scripts\python -m uvicorn backend.app.main:app --reload
+```
+
+```bash
+# macOS / Linux
+.venv/bin/python -m uvicorn backend.app.main:app --reload
+```
+
+When it is ready you will see:
 
 ```text
-notebooks/01_EDA.ipynb
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Application startup complete.
 ```
 
-## 5. Run Preprocessing
+| Option | Meaning |
+| --- | --- |
+| `--reload` | Restarts automatically when you change backend code (for development) |
+| `--port 8001` | Use another port if 8000 is busy (then open `http://127.0.0.1:8001`) |
+| `--host 0.0.0.0` | Allow other devices on your network to open the app |
 
-Execute the preprocessing notebooks in the required sequence:
+**Check it is running:** open <http://127.0.0.1:8000/api/health> – it should show `"status": "ok"` and the model details.
 
-```text
-02_Data_Cleaning_Member1.ipynb
-03_Feature_Selection_Member2.ipynb
-04_Preprocessing_Member3.ipynb
+**Stop it:** press `Ctrl + C` in the terminal.
+
+---
+
+# 💻 Using the Frontend
+
+1. Start the backend (see above) and keep the terminal open.
+2. Open **<http://127.0.0.1:8000>** in a browser.
+3. Check that the badge at the top right says **Service online**.
+
+### Single customer
+
+1. Fill in the customer's details – fields marked **\*** are required. Optional numbers (e.g. CLTV) can be left blank; the system then uses a typical value and tells you so.
+2. Or click **High risk**, **Moderate risk** or **Low risk** to load a real example customer.
+3. Click **Predict churn risk**.
+
+Fields that do not apply are filled in automatically – for example, choosing *No Internet Service* switches off the internet add-ons. Invalid values (e.g. age 150) are highlighted with a message before anything is sent.
+
+The result panel shows:
+
+| Part | Meaning |
+| --- | --- |
+| **Churn probability** | Chance that the customer will leave (0–100%) |
+| **Decision** | *Likely to churn* when the probability is **51% or higher** (the model's decision threshold) |
+| **Risk level** | **High** ≥ 51% (flagged) · **Moderate** 30–51% (keep an eye on) · **Low** < 30% |
+| **What raises / lowers the risk** | The customer details that pushed this prediction up or down the most |
+| **Suggested actions** | Retention actions linked to the main risk factors |
+| **Warnings** | E.g. a value was estimated, or is outside the range seen in training |
+
+### Many customers (CSV)
+
+1. Open the **Many customers (CSV)** tab.
+2. Click **Download sample CSV** to see the expected format, or use your own file. Columns can use the original dataset names (e.g. `Monthly Charge`) or the API names (e.g. `monthly_charge`); a `Customer ID` column is kept as an identifier. Up to 5,000 rows.
+3. Choose the file and click **Score file**.
+4. Customers are listed from highest to lowest risk, with the main risk factor and a suggested action. Tick **Show only customers likely to churn** to filter, and click **Download results (CSV)** to export the list. Rows with errors are listed separately with the reason.
+
+> The page can also be opened directly from `frontend/index.html` or through VS Code Live Server – it then connects to the backend at `http://127.0.0.1:8000` automatically. To use a backend somewhere else, add `?api=<backend-url>` to the page address.
+
+---
+
+# 🔗 API Endpoints
+
+Interactive documentation with a **Try it out** button for every endpoint: <http://127.0.0.1:8000/docs>
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/health` | Service status, model version, decision threshold and test metrics |
+| `GET` | `/api/schema` | Input fields, allowed values and ranges (used to build the form) |
+| `POST` | `/api/predict` | Predict one customer |
+| `POST` | `/api/predict/batch` | Predict up to 1,000 customers (JSON) |
+| `POST` | `/api/predict/csv` | Score an uploaded CSV file (up to 5,000 rows) |
+
+Example request (PowerShell):
+
+```powershell
+$customer = (Get-Content frontend\examples.json | ConvertFrom-Json).high
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/predict -Method Post `
+  -ContentType "application/json" -Body ($customer | ConvertTo-Json)
 ```
 
-## 6. Model Development
+Example response (shortened):
 
-After preprocessing:
-
-```text
-05_Model_Development.ipynb
+```json
+{
+  "churn_probability": 0.951,
+  "churn_probability_pct": "95.1%",
+  "at_risk": true,
+  "prediction": "Likely to churn",
+  "risk_level": "High",
+  "threshold": 0.51,
+  "factors_increasing_risk": [{ "feature": "Contract", "value": "Month-to-Month", "impact": 1.11 }],
+  "recommendations": ["Offer an incentive (e.g. a discount) to move from a month-to-month to a one- or two-year contract."],
+  "warnings": []
+}
 ```
 
-will be used for model training, comparison and optimization.
+Invalid or inconsistent inputs return **HTTP 422** with one message per field:
+
+```json
+{
+  "detail": "Invalid input",
+  "errors": [{ "field": "age", "message": "Input should be greater than or equal to 18" }]
+}
+```
+
+---
+
+# 🧪 Running the Tests
+
+```bash
+python -m pytest backend/tests -q
+```
+
+The tests cover valid predictions; missing, invalid and inconsistent inputs; batch and CSV scoring; and an end-to-end check that the API reproduces the notebooks' predictions for all 1,409 test customers (F1 0.7206).
+
+---
+
+# 🌐 Deployment
+
+The app is deployed as a single web service on **[Render](https://render.com)** (free plan), using the configuration in `render.yaml`.
+
+1. Sign in to Render with GitHub and give it access to this repository.
+2. Click **New → Blueprint**, select the repository, then **Apply**.
+3. After the build (about 3–5 minutes) the app is available at the URL Render shows, e.g. `https://churn-risk-checker.onrender.com`.
+
+Without the blueprint, create a **Web Service** with build command `pip install -r backend/requirements.txt`, start command `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`, health check path `/api/health` and environment variable `PYTHON_VERSION=3.11.3`.
+
+Every push to `main` redeploys automatically. On the free plan the app sleeps after 15 minutes without visitors, and the first visit then takes about a minute – open it shortly before a demo.
+
+---
+
+# 🩺 Troubleshooting
+
+| Problem | Solution |
+| --- | --- |
+| Page shows **Service offline** | The backend is not running – start it, then reload the page (`Ctrl + F5`). Open the app at `http://127.0.0.1:8000`. |
+| `ModuleNotFoundError` (e.g. `fastapi`, `xgboost`) | Use the virtual environment's Python (`.venv\Scripts\python …`) and install the requirements. |
+| Port 8000 already in use | Start with `--port 8001` and open `http://127.0.0.1:8001`. |
+| `Activate.ps1` cannot be loaded | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, or call `.venv\Scripts\python` directly. |
+| Warnings when loading the models | Install the exact versions from `requirements.txt` (scikit-learn 1.9.1, xgboost 3.2.0). |
+| Frontend changes do not appear | Hard-refresh the browser with `Ctrl + F5`. |
 
 ---
 

@@ -1,0 +1,9 @@
+# Everything needed for the whole project: the app (backend + frontend) and the Jupyter notebooks.
+# App only:  pip install -r backend/requirements.txt
+-r backend/requirements.txt
+
+# notebooks (EDA, preprocessing, model development and comparison)
+matplotlib==3.11.2
+seaborn==0.13.2
+scipy==1.17.1
+ipykernel==7.3.0
